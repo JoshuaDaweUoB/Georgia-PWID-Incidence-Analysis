@@ -72,7 +72,11 @@ georgia_hiv_incidence$hiv_test_rslt <- dplyr::recode(
 georgia_hiv_incidence <- georgia_hiv_incidence %>%
   filter(!is.na(hiv_test_rslt))
 
-# create sequence id for each study_id
+# table of hiv_test_reslt
+hiv_test_table <- table(georgia_hiv_incidence$hiv_test_rslt, useNA = "ifany")
+hiv_test_table
+
+# create sequence id for each study_id and remove ids with only one test
 georgia_hiv_incidence <- georgia_hiv_incidence %>%
   arrange(study_id, lab_test_dte) %>%
   group_by(study_id) %>%
@@ -85,7 +89,7 @@ georgia_hiv_incidence <- georgia_hiv_incidence %>%
 
 # table of hiv_test_reslt
 hiv_test_table <- table(georgia_hiv_incidence$hiv_test_rslt, useNA = "ifany")
-hiv_test_table
+hiv_test_table ## 5 positives
 
 # lag hiv_test_reslt and lab_test_dte
 georgia_hiv_incidence <- georgia_hiv_incidence %>%
@@ -98,6 +102,18 @@ georgia_hiv_incidence <- georgia_hiv_incidence %>%
 georgia_hiv_incidence <- georgia_hiv_incidence %>%
   mutate(days_risk = as.numeric(lab_test_dte_lag - lab_test_dte))
 
+# look at data
+positive_ids <- georgia_hiv_incidence %>%
+  filter(hiv_test_rslt == "Positive") %>%
+  pull(study_id) %>%
+  unique()
+
+all_positive_data <- georgia_hiv_incidence %>%
+  filter(study_id %in% positive_ids)
+
+View(all_positive_data)
+
+# remove nth row of each study_id
 georgia_hiv_incidence <- georgia_hiv_incidence %>%
   group_by(study_id) %>%
   filter(row_number() != n()) %>%
@@ -125,6 +141,10 @@ georgia_hiv_incidence <- georgia_hiv_incidence %>%
 
 # look at data
 View(georgia_hiv_incidence)
+
+# table of hiv_test_reslt
+hiv_test_table <- table(georgia_hiv_incidence$hiv_test_rslt_lag, useNA = "ifany")
+hiv_test_table
 
 # save HIV data
 write_csv(georgia_hiv_incidence, "data/georgia_hiv_incidence.csv")
